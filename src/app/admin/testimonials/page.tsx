@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
+
+const emptyForm = { author_name: "", author_role: "", content: "", rating: 5, avatar_url: "" };
 
 export default function TestimonialsAdmin() {
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ 
-    author_name: "", author_role: "", content: "", rating: 5, avatar_url: "" 
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ ...emptyForm });
 
   useEffect(() => {
     fetchTestimonials();
@@ -23,15 +24,43 @@ export default function TestimonialsAdmin() {
     setLoading(false);
   }
 
+  function openAdd() {
+    setEditingId(null);
+    setFormData({ ...emptyForm });
+    setShowForm(true);
+  }
+
+  function handleEdit(testimonial: any) {
+    setFormData({
+      author_name: testimonial.author_name ?? "",
+      author_role: testimonial.author_role ?? "",
+      content: testimonial.content ?? "",
+      rating: testimonial.rating ?? 5,
+      avatar_url: testimonial.avatar_url ?? "",
+    });
+    setEditingId(testimonial.id);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeForm() {
+    setEditingId(null);
+    setFormData({ ...emptyForm });
+    setShowForm(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const { error } = await supabase.from("testimonials").insert([formData]);
+    const { error } = editingId
+      ? await supabase.from("testimonials").update(formData).eq("id", editingId)
+      : await supabase.from("testimonials").insert([formData]);
     if (!error) {
       setShowForm(false);
-      setFormData({ author_name: "", author_role: "", content: "", rating: 5, avatar_url: "" });
+      setEditingId(null);
+      setFormData({ ...emptyForm });
       fetchTestimonials();
     } else {
-      alert("Error adding testimonial: " + error.message);
+      alert("Error saving testimonial: " + error.message);
     }
   }
 
@@ -45,14 +74,14 @@ export default function TestimonialsAdmin() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Manage Testimonials</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition">
+        <button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition">
           <Plus className="w-5 h-5 mr-2" /> Add Testimonial
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white p-6 rounded-xl shadow-sm mb-8 border border-gray-100">
-          <h2 className="text-lg font-semibold mb-4">Add New Testimonial</h2>
+          <h2 className="text-lg font-semibold mb-4">{editingId ? "Edit Testimonial" : "Add New Testimonial"}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -76,7 +105,10 @@ export default function TestimonialsAdmin() {
                 <textarea required className="w-full border rounded-lg p-2" rows={4} value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} />
               </div>
             </div>
-            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">Save Testimonial</button>
+            <div className="flex gap-3">
+              <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">{editingId ? "Update Testimonial" : "Save Testimonial"}</button>
+              <button type="button" onClick={closeForm} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">Cancel</button>
+            </div>
           </form>
         </div>
       )}
@@ -104,6 +136,7 @@ export default function TestimonialsAdmin() {
                   <td className="p-4 text-gray-600">{testimonial.author_role}</td>
                   <td className="p-4 text-gray-600">{testimonial.rating} / 5</td>
                   <td className="p-4 text-right">
+                    <button onClick={() => handleEdit(testimonial)} className="text-blue-500 hover:text-blue-700 p-2"><Edit className="w-5 h-5" /></button>
                     <button onClick={() => handleDelete(testimonial.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 className="w-5 h-5" /></button>
                   </td>
                 </tr>

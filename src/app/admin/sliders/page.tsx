@@ -13,11 +13,14 @@ type Slider = {
   is_active: boolean;
 };
 
+const emptyForm = { title: "", image_url: "", link_url: "", order_index: 0, is_active: true };
+
 export default function SlidersAdmin() {
   const [sliders, setSliders] = useState<Slider[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ title: "", image_url: "", link_url: "", order_index: 0, is_active: true });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ ...emptyForm });
 
   useEffect(() => {
     fetchSliders();
@@ -30,15 +33,43 @@ export default function SlidersAdmin() {
     setLoading(false);
   }
 
+  function openAdd() {
+    setEditingId(null);
+    setFormData({ ...emptyForm });
+    setShowForm(true);
+  }
+
+  function handleEdit(slider: Slider) {
+    setFormData({
+      title: slider.title,
+      image_url: slider.image_url,
+      link_url: slider.link_url,
+      order_index: slider.order_index,
+      is_active: slider.is_active,
+    });
+    setEditingId(slider.id);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeForm() {
+    setEditingId(null);
+    setFormData({ ...emptyForm });
+    setShowForm(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const { error } = await supabase.from("sliders").insert([formData]);
+    const { error } = editingId
+      ? await supabase.from("sliders").update(formData).eq("id", editingId)
+      : await supabase.from("sliders").insert([formData]);
     if (!error) {
       setShowForm(false);
-      setFormData({ title: "", image_url: "", link_url: "", order_index: 0, is_active: true });
+      setEditingId(null);
+      setFormData({ ...emptyForm });
       fetchSliders();
     } else {
-      alert("Error adding slider: " + error.message);
+      alert("Error saving slider: " + error.message);
     }
   }
 
@@ -52,8 +83,8 @@ export default function SlidersAdmin() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Manage Sliders</h1>
-        <button 
-          onClick={() => setShowForm(!showForm)}
+        <button
+          onClick={openAdd}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition"
         >
           <Plus className="w-5 h-5 mr-2" /> Add Slider
@@ -62,7 +93,7 @@ export default function SlidersAdmin() {
 
       {showForm && (
         <div className="bg-white p-6 rounded-xl shadow-sm mb-8 border border-gray-100">
-          <h2 className="text-lg font-semibold mb-4">Add New Slider</h2>
+          <h2 className="text-lg font-semibold mb-4">{editingId ? "Edit Slider" : "Add New Slider"}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -86,7 +117,10 @@ export default function SlidersAdmin() {
               <input type="checkbox" id="isActive" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="mr-2" />
               <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Is Active</label>
             </div>
-            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">Save Slider</button>
+            <div className="flex gap-3">
+              <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">{editingId ? "Update Slider" : "Save Slider"}</button>
+              <button type="button" onClick={closeForm} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">Cancel</button>
+            </div>
           </form>
         </div>
       )}
@@ -119,6 +153,9 @@ export default function SlidersAdmin() {
                     </span>
                   </td>
                   <td className="p-4 text-right">
+                    <button onClick={() => handleEdit(slider)} className="text-blue-500 hover:text-blue-700 p-2">
+                      <Edit className="w-5 h-5" />
+                    </button>
                     <button onClick={() => handleDelete(slider.id)} className="text-red-500 hover:text-red-700 p-2">
                       <Trash2 className="w-5 h-5" />
                     </button>

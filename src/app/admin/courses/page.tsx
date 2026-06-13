@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
+
+const emptyForm = {
+  slug: "", category: "Student Program", audience: "students", title: "",
+  tagline: "", description: "", modules: "", duration: "", format: "", image_url: "",
+};
 
 export default function CoursesAdmin() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ 
-    slug: "", category: "Student Program", audience: "students", title: "", 
-    tagline: "", description: "", modules: "", duration: "", format: "", image_url: "" 
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ ...emptyForm });
 
   useEffect(() => {
     fetchCourses();
@@ -24,15 +27,48 @@ export default function CoursesAdmin() {
     setLoading(false);
   }
 
+  function openAdd() {
+    setEditingId(null);
+    setFormData({ ...emptyForm });
+    setShowForm(true);
+  }
+
+  function handleEdit(course: any) {
+    setFormData({
+      slug: course.slug ?? "",
+      category: course.category ?? "",
+      audience: course.audience ?? "students",
+      title: course.title ?? "",
+      tagline: course.tagline ?? "",
+      description: course.description ?? "",
+      modules: course.modules ?? "",
+      duration: course.duration ?? "",
+      format: course.format ?? "",
+      image_url: course.image_url ?? "",
+    });
+    setEditingId(course.id);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeForm() {
+    setEditingId(null);
+    setFormData({ ...emptyForm });
+    setShowForm(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const { error } = await supabase.from("courses").insert([formData]);
+    const { error } = editingId
+      ? await supabase.from("courses").update(formData).eq("id", editingId)
+      : await supabase.from("courses").insert([formData]);
     if (!error) {
       setShowForm(false);
-      setFormData({ slug: "", category: "Student Program", audience: "students", title: "", tagline: "", description: "", modules: "", duration: "", format: "", image_url: "" });
+      setEditingId(null);
+      setFormData({ ...emptyForm });
       fetchCourses();
     } else {
-      alert("Error adding course: " + error.message);
+      alert("Error saving course: " + error.message);
     }
   }
 
@@ -46,14 +82,14 @@ export default function CoursesAdmin() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Manage Courses</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition">
+        <button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition">
           <Plus className="w-5 h-5 mr-2" /> Add Course
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white p-6 rounded-xl shadow-sm mb-8 border border-gray-100">
-          <h2 className="text-lg font-semibold mb-4">Add New Course</h2>
+          <h2 className="text-lg font-semibold mb-4">{editingId ? "Edit Course" : "Add New Course"}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -88,7 +124,10 @@ export default function CoursesAdmin() {
                 <textarea className="w-full border rounded-lg p-2" rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               </div>
             </div>
-            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">Save Course</button>
+            <div className="flex gap-3">
+              <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">{editingId ? "Update Course" : "Save Course"}</button>
+              <button type="button" onClick={closeForm} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">Cancel</button>
+            </div>
           </form>
         </div>
       )}
@@ -114,6 +153,7 @@ export default function CoursesAdmin() {
                   </td>
                   <td className="p-4 text-gray-600">{course.category}</td>
                   <td className="p-4 text-right">
+                    <button onClick={() => handleEdit(course)} className="text-blue-500 hover:text-blue-700 p-2"><Edit className="w-5 h-5" /></button>
                     <button onClick={() => handleDelete(course.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 className="w-5 h-5" /></button>
                   </td>
                 </tr>

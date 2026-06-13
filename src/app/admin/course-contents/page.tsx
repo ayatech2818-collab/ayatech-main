@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
+
+const emptyForm = {
+  course_id: "", title: "", description: "", content_type: "video", media_url: "", order_index: 0,
+};
 
 export default function CourseContentsAdmin() {
   const [contents, setContents] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ 
-    course_id: "", title: "", description: "", content_type: "video", media_url: "", order_index: 0 
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ ...emptyForm });
 
   useEffect(() => {
     fetchData();
@@ -38,20 +41,49 @@ export default function CourseContentsAdmin() {
     setLoading(false);
   }
 
+  function openAdd() {
+    setEditingId(null);
+    setFormData({ ...emptyForm });
+    setShowForm(true);
+  }
+
+  function handleEdit(content: any) {
+    setFormData({
+      course_id: content.course_id ?? "",
+      title: content.title ?? "",
+      description: content.description ?? "",
+      content_type: content.content_type ?? "video",
+      media_url: content.media_url ?? "",
+      order_index: content.order_index ?? 0,
+    });
+    setEditingId(content.id);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeForm() {
+    setEditingId(null);
+    setFormData({ ...emptyForm });
+    setShowForm(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formData.course_id) {
       alert("Please select a course");
       return;
     }
-    
-    const { error } = await supabase.from("course_contents").insert([formData]);
+
+    const { error } = editingId
+      ? await supabase.from("course_contents").update(formData).eq("id", editingId)
+      : await supabase.from("course_contents").insert([formData]);
     if (!error) {
       setShowForm(false);
-      setFormData({ course_id: "", title: "", description: "", content_type: "video", media_url: "", order_index: 0 });
+      setEditingId(null);
+      setFormData({ ...emptyForm });
       fetchData();
     } else {
-      alert("Error adding content: " + error.message);
+      alert("Error saving content: " + error.message);
     }
   }
 
@@ -65,14 +97,14 @@ export default function CourseContentsAdmin() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Manage Course Contents</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition">
+        <button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition">
           <Plus className="w-5 h-5 mr-2" /> Add Content
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white p-6 rounded-xl shadow-sm mb-8 border border-gray-100">
-          <h2 className="text-lg font-semibold mb-4">Add New Course Content</h2>
+          <h2 className="text-lg font-semibold mb-4">{editingId ? "Edit Course Content" : "Add New Course Content"}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 md:col-span-1">
@@ -110,7 +142,10 @@ export default function CourseContentsAdmin() {
                 <textarea className="w-full border rounded-lg p-2" rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               </div>
             </div>
-            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">Save Content</button>
+            <div className="flex gap-3">
+              <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">{editingId ? "Update Content" : "Save Content"}</button>
+              <button type="button" onClick={closeForm} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">Cancel</button>
+            </div>
           </form>
         </div>
       )}
@@ -137,6 +172,7 @@ export default function CourseContentsAdmin() {
                   <td className="p-4 text-gray-600 capitalize">{content.content_type}</td>
                   <td className="p-4 text-gray-600">Module {content.order_index}</td>
                   <td className="p-4 text-right">
+                    <button onClick={() => handleEdit(content)} className="text-blue-500 hover:text-blue-700 p-2"><Edit className="w-5 h-5" /></button>
                     <button onClick={() => handleDelete(content.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 className="w-5 h-5" /></button>
                   </td>
                 </tr>
