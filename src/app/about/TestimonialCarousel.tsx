@@ -2,56 +2,44 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
-
-const testimonials = [
-  {
-    body: "Before AyaTech I thought coding was just typing commands. After the AI Lab program I shipped a working chatbot for my school's library — in eight weeks. Nothing else comes close to that kind of confidence.",
-    name: "Aryan Mehta",
-    role: "Grade 10 Student, Bengaluru",
-    initials: "AM",
-  },
-  {
-    body: "As a software engineer I assumed I already knew enough. The GenAI professional cohort changed that completely. I integrated an LLM workflow into our product pipeline within two weeks of graduating.",
-    name: "Priya Nair",
-    role: "Software Engineer, Kochi",
-    initials: "PN",
-  },
-  {
-    body: "My daughter was always curious about robotics but regular classes were too theoretical. AyaTech's hardware sprint let her build an actual line-following robot. She hasn't stopped building since.",
-    name: "Rajesh Kumar",
-    role: "Parent, Coimbatore",
-    initials: "RK",
-  },
-  {
-    body: "The 3D design track completely shifted my perspective. I went from having zero experience in Unity to creating my own interactive environments. Highly recommend for any creative builder.",
-    name: "Sanya Sharma",
-    role: "Grade 11 Student, Online",
-    initials: "SS",
-  },
-  {
-    body: "I needed to upskill in Prompt Engineering quickly for my startup. The weekend intensive was exactly what I needed—no fluff, just practical, agentic workflows that save me hours every day.",
-    name: "Anand Menon",
-    role: "Startup Founder, Bengaluru",
-    initials: "AM",
-  }
-];
+import { getTestimonials, type UITestimonial } from "@/lib/queries";
 
 export default function TestimonialCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [testimonials, setTestimonials] = useState<UITestimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getTestimonials().then((data) => {
+      setTestimonials(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const count = testimonials.length;
 
   const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-  }, []);
+    setCurrentIndex((prev) => (count === 0 ? 0 : (prev + 1) % count));
+  }, [count]);
 
   const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  }, []);
+    setCurrentIndex((prev) => (count === 0 ? 0 : (prev - 1 + count) % count));
+  }, [count]);
 
   // Auto scroll every 5 seconds
   useEffect(() => {
+    if (count <= 1) return;
     const timer = setInterval(nextSlide, 5000);
     return () => clearInterval(timer);
-  }, [nextSlide]);
+  }, [nextSlide, count]);
+
+  if (loading) {
+    return <div className="w-full text-center text-gray-400 text-sm py-10">Loading testimonials…</div>;
+  }
+
+  if (count === 0) {
+    return null;
+  }
 
   return (
     <div className="relative w-full max-w-4xl mx-auto overflow-hidden px-10">
@@ -68,10 +56,15 @@ export default function TestimonialCarousel() {
               
               <div className="flex items-center gap-4 justify-center mt-4">
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold text-white"
+                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold text-white overflow-hidden"
                   style={{ backgroundColor: "#1C2A57" }}
                 >
-                  {t.initials}
+                  {t.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t.avatarUrl} alt={t.name} className="w-full h-full object-cover" />
+                  ) : (
+                    t.initials
+                  )}
                 </div>
                 <div className="flex flex-col gap-1 items-start">
                   <p className="m-0 font-semibold text-sm" style={{ color: "#1C2A57" }}>

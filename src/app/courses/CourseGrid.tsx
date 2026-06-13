@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BookOpen, Clock, Users, Star } from "lucide-react";
 
-import { courses, type Course } from "../../data/courses";
+import { getCourses, type UICourse } from "@/lib/queries";
 
 type Filter = "all" | "students" | "professionals";
 
@@ -19,23 +19,33 @@ const categoryColor: Record<string, { bg: string; text: string }> = {
   "Professional Track":{ bg: "#3AB54A1A", text: "#2A9A3A" },
 };
 
-function CourseCard({ course }: { course: Course }) {
+function CourseCard({ course }: { course: UICourse }) {
   const cat = categoryColor[course.category] ?? { bg: "#F4F6F8", text: "#1C2A57" };
 
   return (
     <div className="flex flex-col rounded-2xl overflow-hidden border border-gray-100 bg-white hover:shadow-xl transition-all duration-300 group">
       {/* Image */}
-      <div
-        className="w-full h-48 flex items-center justify-center text-xs text-center select-none"
-        style={{
-          backgroundColor: course.imgAccent + "18",
-          borderBottom: `3px solid ${course.imgAccent}`,
-          color: course.imgAccent + "80",
-          padding: "8px",
-        }}
-      >
-        {course.imgLabel}
-      </div>
+      {course.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={course.imageUrl}
+          alt={course.title}
+          className="w-full h-48 object-cover"
+          style={{ borderBottom: `3px solid ${course.imgAccent}` }}
+        />
+      ) : (
+        <div
+          className="w-full h-48 flex items-center justify-center text-xs text-center select-none"
+          style={{
+            backgroundColor: course.imgAccent + "18",
+            borderBottom: `3px solid ${course.imgAccent}`,
+            color: course.imgAccent + "80",
+            padding: "8px",
+          }}
+        >
+          {course.imgLabel}
+        </div>
+      )}
 
       {/* Card body */}
       <div className="flex flex-col gap-3 p-5 flex-1">
@@ -105,6 +115,15 @@ function CourseCard({ course }: { course: Course }) {
 
 export default function CourseGrid() {
   const [active, setActive] = useState<Filter>("all");
+  const [courses, setCourses] = useState<UICourse[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCourses().then((data) => {
+      setCourses(data);
+      setLoading(false);
+    });
+  }, []);
 
   const visible = active === "all" ? courses : courses.filter((c) => c.audience === active);
 
@@ -131,11 +150,17 @@ export default function CourseGrid() {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-3 gap-6 max-lg:grid-cols-2 max-md:grid-cols-1">
-          {visible.map((course) => (
-            <CourseCard key={course.title} course={course} />
-          ))}
-        </div>
+        {loading ? (
+          <p className="text-center text-gray-400 text-sm m-0">Loading programs…</p>
+        ) : visible.length === 0 ? (
+          <p className="text-center text-gray-400 text-sm m-0">No programs found.</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-6 max-lg:grid-cols-2 max-md:grid-cols-1">
+            {visible.map((course) => (
+              <CourseCard key={course.id} course={course} />
+            ))}
+          </div>
+        )}
 
         {/* Bottom note */}
         <p className="text-center text-gray-400 text-sm m-0">

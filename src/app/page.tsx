@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { BuildIcon, LaunchIcon, LeadIcon } from "./components/PillarIcons";
 import { MediaShowcase } from "./components/MediaShowcase";
+import HeroSlider from "./components/HeroSlider";
 
 const Spline = dynamic(() => import("@splinetool/react-spline"), { ssr: false });
 
@@ -136,6 +137,11 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          SLIDERS (managed in /admin/sliders)
+      ══════════════════════════════════════════════════════════ */}
+      <HeroSlider />
 
       {/* ══════════════════════════════════════════════════════════
           STATS STRIP

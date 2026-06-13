@@ -1,19 +1,31 @@
 import { notFound } from "next/navigation";
-import { courses } from "../../../data/courses";
+import { getCourseBySlug, getCourseContents } from "@/lib/queries";
 import CourseMediaCarousel from "../CourseMediaCarousel";
-import { BookOpen, Clock, Users, ArrowRight } from "lucide-react";
+import { BookOpen, Clock, Users, ArrowRight, PlayCircle, FileText, ListChecks } from "lucide-react";
+
+// Always render fresh so admin changes appear immediately for viewers.
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
+const contentIcon: Record<string, typeof PlayCircle> = {
+  video: PlayCircle,
+  document: FileText,
+  quiz: ListChecks,
+  interactive: ListChecks,
+};
+
 export default async function CoursePage({ params }: Props) {
   const resolvedParams = await params;
-  const course = courses.find((c) => c.slug === resolvedParams.slug);
+  const course = await getCourseBySlug(resolvedParams.slug);
 
   if (!course) {
     notFound();
   }
+
+  const contents = await getCourseContents(course.id);
 
   // Generate WhatsApp message
   const phoneNumber = "1234567890"; // Replace with actual number
@@ -60,6 +72,57 @@ export default async function CoursePage({ params }: Props) {
             {course.description}
           </p>
         </div>
+
+        {/* Curriculum Section (from course_contents) */}
+        {contents.length > 0 && (
+          <div className="max-w-3xl mx-auto w-full flex flex-col gap-6">
+            <h2 className="text-2xl font-bold text-center" style={{ color: "#1C2A57" }}>
+              Curriculum
+            </h2>
+            <div className="flex flex-col gap-3">
+              {contents.map((item, idx) => {
+                const Icon = contentIcon[item.contentType] ?? PlayCircle;
+                const inner = (
+                  <>
+                    <div
+                      className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0 text-white text-sm font-semibold"
+                      style={{ backgroundColor: "#1C2A57" }}
+                    >
+                      {idx + 1}
+                    </div>
+                    <div className="flex flex-col gap-0.5 flex-1">
+                      <span className="font-semibold text-sm" style={{ color: "#1C2A57" }}>
+                        {item.title}
+                      </span>
+                      {item.description && (
+                        <span className="text-xs text-gray-500">{item.description}</span>
+                      )}
+                    </div>
+                    <Icon size={18} strokeWidth={2} color="#3AB54A" className="flex-shrink-0" />
+                  </>
+                );
+                return item.mediaUrl ? (
+                  <a
+                    key={item.id}
+                    href={item.mediaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="no-underline flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-white hover:shadow-md transition-all"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-white"
+                  >
+                    {inner}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Media / Sliding Images section */}
         <div className="w-full max-w-[100vw] mx-auto border-y border-gray-100 py-10 my-4 flex flex-col gap-6 overflow-hidden">
