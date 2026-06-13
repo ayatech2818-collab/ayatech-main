@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --btn-green: #3AB54A;
+  --btn-green-shadow: rgba(58, 181, 74, 0.5);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  font-weight: 400;
+  overflow-x: hidden;
+}
+
+/* Global heading weight reduction — lighter, more modern feel */
+h1 { font-weight: 700; font-family: var(--font-display), system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+h2 { font-weight: 600; font-family: var(--font-display), system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.05em; }
+h3 { font-weight: 600; font-family: var(--font-display), system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+h4, h5, h6 { font-weight: 500; }
+
+/* Reduce Tailwind bold utilities one step globally */
+.font-bold     { font-weight: 600 !important; }
+.font-semibold { font-weight: 500 !important; }
+.font-medium   { font-weight: 400 !important; }
+
+/* CTA button — vivid green */
+.btn-cta {
+  background-color: var(--btn-green) !important;
+  box-shadow: 0 8px 28px var(--btn-green-shadow) !important;
+}
+.btn-cta:hover { opacity: 0.92; }
+
+
+.image-gradient {
+  position: absolute;
+  top: 0;
+  right: 0;
+  opacity: 0.5;
+  z-index: -1;
+}
+
+
+
+
+/* Custom animated gradient border box */
+.tag-box {
+  position: relative;
+  height: 2.5rem;
+  border-radius: 50px;
+  background: linear-gradient(to right, #3AB54A, #1C2A57, #3AB54A, #1C2A57, #3AB54A);
+  background-size: 200%;
+  animation: animationGradient 2.5s linear infinite;
+  box-shadow: 0 0 15px rgba(58, 181, 74, 0.2);
+}
+
+@keyframes animationGradient {
+  to {
+    background-position: 200%;
+  }
+}
+
+.tag-box .tag {
+  position: absolute;
+  inset: 3px;
+  background-color: white;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.tag-box .tag:hover {
+  color: #3AB54A;
+}
+
+/* Spline 3D Robot element — inside right-60% container */
+.robot-3d {
+  position: absolute;
+  top: 0;
+  right: -10%;
+  width: 110%;
+  height: 100%;
+}
+
+@media (max-width: 1300px) {
+  .robot-3d {
+    right: -5%;
+    width: 110%;
+    top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .robot-3d {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    right: 0;
+    top: 0;
+  }
+}
+
+/* Hide scrollbar — used on horizontal snap-scroll card row */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hero grid line background */
+.hero-grid {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(rgba(28, 42, 87, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(28, 42, 87, 0.07) 1px, transparent 1px);
+  background-size: 100px 100px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 40%, black 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 90% 90% at 50% 40%, black 40%, transparent 100%);
+}
