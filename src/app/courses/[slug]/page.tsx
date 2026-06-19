@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCourseBySlug, getCourseContents } from "@/lib/queries";
+import { getVideoEmbed } from "@/lib/video";
 import CourseMediaCarousel from "../CourseMediaCarousel";
 import { BookOpen, Clock, Users, ArrowRight, PlayCircle, FileText, ListChecks } from "lucide-react";
 
@@ -105,6 +106,48 @@ export default async function CoursePage({ params }: Props) {
                     <Icon size={18} strokeWidth={2} color="#3AB54A" className="flex-shrink-0" />
                   </>
                 );
+                // Video items play inline (uploaded file → <video>, YouTube/Vimeo → iframe),
+                // and still offer an "open in new tab" link.
+                if (item.contentType === "video" && item.mediaUrl) {
+                  const { kind, embedUrl } = getVideoEmbed(item.mediaUrl);
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex flex-col gap-3 p-4 rounded-xl border border-gray-100 bg-white"
+                    >
+                      <div className="flex items-center gap-4">{inner}</div>
+
+                      {kind === "file" && (
+                        <video
+                          controls
+                          preload="metadata"
+                          src={embedUrl}
+                          className="w-full rounded-lg max-h-[460px] bg-black"
+                        />
+                      )}
+                      {(kind === "youtube" || kind === "vimeo") && (
+                        <iframe
+                          src={embedUrl}
+                          title={item.title}
+                          className="w-full aspect-video rounded-lg"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      )}
+
+                      <a
+                        href={item.mediaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="no-underline self-start text-xs font-semibold"
+                        style={{ color: "#3AB54A" }}
+                      >
+                        Open in new tab ↗
+                      </a>
+                    </div>
+                  );
+                }
+
                 return item.mediaUrl ? (
                   <a
                     key={item.id}
