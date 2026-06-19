@@ -1,7 +1,7 @@
 "use client";
 
 import AOS from "aos";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Users, GraduationCap, Briefcase,
@@ -10,10 +10,17 @@ import {
 import { BuildIcon, LaunchIcon, LeadIcon } from "./components/PillarIcons";
 import { MediaShowcase } from "./components/MediaShowcase";
 import HeroSlider from "./components/HeroSlider";
+import { getSiteSettings } from "@/lib/queries";
 
 const Spline = dynamic(() => import("@splinetool/react-spline"), { ssr: false });
 
 export default function Home() {
+  const [images, setImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    getSiteSettings().then(setImages);
+  }, []);
+
   useEffect(() => {
     AOS.refresh();
     const originalWarn = console.warn;
@@ -207,7 +214,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex items-center gap-14 max-lg:flex-col">
 
           {/* LEFT — animated media showcase */}
-          <MediaShowcase />
+          <MediaShowcase items={[1, 2, 3, 4].map((i) => ({ src: images[`home_showcase_${i}`] }))} />
 
           {/* RIGHT — section title + pillar cards */}
           <div className="flex-1 flex flex-col gap-7 max-lg:w-full">
@@ -302,6 +309,7 @@ export default function Home() {
                 linkLabel: "For Students",
                 accent: "#3AB54A",
                 imgLabel: "Parent & child",
+                imgKey: "home_card_parent",
                 delay: 0,
                 featured: false,
               },
@@ -316,6 +324,7 @@ export default function Home() {
                 accent: "#3AB54A",
                 featured: true,
                 imgLabel: "Student learning",
+                imgKey: "home_card_learner",
                 delay: 100,
               },
               {
@@ -328,6 +337,7 @@ export default function Home() {
                 linkLabel: "For Professionals",
                 accent: "#1C2A57",
                 imgLabel: "Professional at desk",
+                imgKey: "home_card_professional",
                 delay: 200,
                 featured: false,
               },
@@ -345,16 +355,20 @@ export default function Home() {
                 ].join(" ")}
               >
                 {/* Image area */}
-                <div
-                  className="w-full h-[180px] flex flex-col items-center justify-center gap-2.5 select-none"
-                  style={{ backgroundColor: "#F0F0F0", color: "#C0C0C0" }}
-                >
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  <span className="text-xs text-center px-3">{card.imgLabel}</span>
+                <div className="w-full h-[180px] overflow-hidden select-none" style={{ backgroundColor: "#F0F0F0" }}>
+                  {images[card.imgKey] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={images[card.imgKey]} alt={card.imgLabel} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2.5" style={{ color: "#C0C0C0" }}>
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <span className="text-xs text-center px-3">{card.imgLabel}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card body */}
@@ -429,22 +443,32 @@ export default function Home() {
             data-aos="fade-left" data-aos-duration="900" data-aos-delay="100"
             className="flex-1 max-lg:w-full flex justify-center max-lg:hidden"
           >
-            <div
-              className="w-full max-w-[420px] h-[340px] flex flex-col items-center justify-center gap-2.5 select-none"
-              style={{
-                backgroundColor: "#ffffff0f",
-                borderRadius: "16px",
-                color: "#ffffff40",
-                boxShadow: "0 8px 40px rgba(0,0,0,0.3)",
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-              <span className="text-xs text-center px-3">Student / graduate</span>
-            </div>
+            {images.home_cta ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={images.home_cta}
+                alt="Student / graduate"
+                className="w-full max-w-[420px] h-[340px] object-cover"
+                style={{ borderRadius: "16px", boxShadow: "0 8px 40px rgba(0,0,0,0.3)" }}
+              />
+            ) : (
+              <div
+                className="w-full max-w-[420px] h-[340px] flex flex-col items-center justify-center gap-2.5 select-none"
+                style={{
+                  backgroundColor: "#ffffff0f",
+                  borderRadius: "16px",
+                  color: "#ffffff40",
+                  boxShadow: "0 8px 40px rgba(0,0,0,0.3)",
+                }}
+              >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span className="text-xs text-center px-3">Student / graduate</span>
+              </div>
+            )}
           </div>
         </div>
       </section>

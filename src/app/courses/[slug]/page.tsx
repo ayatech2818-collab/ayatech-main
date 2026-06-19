@@ -26,6 +26,10 @@ export default async function CoursePage({ params }: Props) {
   }
 
   const contents = await getCourseContents(course.id);
+  // Image-type contents power the "Inside the Program" gallery; everything else
+  // stays in the curriculum list.
+  const gallery = contents.filter((c) => c.contentType === "image" && c.mediaUrl);
+  const curriculum = contents.filter((c) => c.contentType !== "image");
 
   // Generate WhatsApp message
   const phoneNumber = "1234567890"; // Replace with actual number
@@ -74,13 +78,13 @@ export default async function CoursePage({ params }: Props) {
         </div>
 
         {/* Curriculum Section (from course_contents) */}
-        {contents.length > 0 && (
+        {curriculum.length > 0 && (
           <div className="max-w-3xl mx-auto w-full flex flex-col gap-6">
             <h2 className="text-2xl font-bold text-center" style={{ color: "#1C2A57" }}>
               Curriculum
             </h2>
             <div className="flex flex-col gap-3">
-              {contents.map((item, idx) => {
+              {curriculum.map((item, idx) => {
                 const Icon = contentIcon[item.contentType] ?? PlayCircle;
                 const inner = (
                   <>
@@ -130,7 +134,7 @@ export default async function CoursePage({ params }: Props) {
             Inside the Program
           </h2>
           {/* Automatically looping carousel of course media */}
-          <CourseMediaCarousel />
+          <CourseMediaCarousel items={gallery} />
         </div>
 
         {/* Action Section */}

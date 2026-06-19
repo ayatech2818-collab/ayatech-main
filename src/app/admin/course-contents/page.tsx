@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, Edit } from "lucide-react";
+import MediaUpload from "../components/MediaUpload";
+import { deleteFile } from "@/lib/storage";
 
 const emptyForm = {
   course_id: "", title: "", description: "", content_type: "video", media_url: "", order_index: 0,
@@ -89,8 +91,12 @@ export default function CourseContentsAdmin() {
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure?")) return;
+    const content = contents.find((c) => c.id === id);
     const { error } = await supabase.from("course_contents").delete().eq("id", id);
-    if (!error) fetchData();
+    if (!error) {
+      await deleteFile(content?.media_url);
+      fetchData();
+    }
   }
 
   return (
@@ -127,15 +133,28 @@ export default function CourseContentsAdmin() {
                   <option value="document">Document / PDF</option>
                   <option value="quiz">Quiz / Assessment</option>
                   <option value="interactive">Interactive Lab</option>
+                  <option value="image">Image — Inside the Program gallery</option>
                 </select>
               </div>
               <div className="col-span-2 md:col-span-1">
-                <label className="block text-sm font-medium mb-1">Media URL (Video Link/File Link)</label>
-                <input className="w-full border rounded-lg p-2" value={formData.media_url} onChange={e => setFormData({...formData, media_url: e.target.value})} />
+                <MediaUpload
+                  label={formData.content_type === "image" ? "Gallery Image" : "Media (upload a file or paste a link)"}
+                  folder="course-contents"
+                  accept={
+                    formData.content_type === "video"
+                      ? "video/*"
+                      : formData.content_type === "image"
+                        ? "image/*"
+                        : "application/pdf"
+                  }
+                  allowUrl={formData.content_type !== "image"}
+                  value={formData.media_url}
+                  onChange={(url) => setFormData({ ...formData, media_url: url })}
+                />
               </div>
               <div className="col-span-2 md:col-span-1">
                 <label className="block text-sm font-medium mb-1">Order / Module Number</label>
-                <input type="number" className="w-full border rounded-lg p-2" value={formData.order_index} onChange={e => setFormData({...formData, order_index: parseInt(e.target.value)})} />
+                <input type="number" className="w-full border rounded-lg p-2" value={formData.order_index} onChange={e => setFormData({...formData, order_index: parseInt(e.target.value) || 0})} />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Description / Notes</label>

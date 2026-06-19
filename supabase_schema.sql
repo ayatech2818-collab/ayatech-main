@@ -87,6 +87,29 @@ CREATE TABLE blogs (
 );
 
 -----------------------------------------
+-- 6. Site Settings (key/value store for admin-managed homepage images)
+-----------------------------------------
+CREATE TABLE IF NOT EXISTS site_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- Readable by the public site, writable only with an authenticated (admin) session.
+GRANT SELECT ON site_settings TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON site_settings TO authenticated;
+-- Homepage image slots (empty value = show the default placeholder)
+INSERT INTO site_settings (key, value) VALUES
+    ('home_card_parent', ''),
+    ('home_card_learner', ''),
+    ('home_card_professional', ''),
+    ('home_cta', ''),
+    ('home_showcase_1', ''),
+    ('home_showcase_2', ''),
+    ('home_showcase_3', ''),
+    ('home_showcase_4', '')
+ON CONFLICT (key) DO NOTHING;
+
+-----------------------------------------
 -- Add updated_at trigger function
 -----------------------------------------
 CREATE OR REPLACE FUNCTION update_modified_column()

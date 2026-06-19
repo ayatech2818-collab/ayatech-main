@@ -10,12 +10,14 @@ interface MediaCard {
   src?: string;
 }
 
-const CARDS: MediaCard[] = [
-  { label: "Coding session",  type: "image" },
-  { label: "Robotics lab",    type: "image" },
-  { label: "AI workshop",     type: "image" },
-  { label: "Mentor session",  type: "image" },
+const BASE_CARDS: { label: string }[] = [
+  { label: "Coding session" },
+  { label: "Robotics lab" },
+  { label: "AI workshop" },
+  { label: "Mentor session" },
 ];
+
+const VIDEO_RE = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
 
 /* timing */
 const HOLD_MS = 2600;  // how long card stays at front
@@ -99,7 +101,17 @@ function CardFace({ card, active }: { card: MediaCard; active: boolean }) {
 }
 
 /* ─── MediaShowcase ──────────────────────────────────────── */
-export function MediaShowcase() {
+export function MediaShowcase({ items = [] }: { items?: { src?: string }[] }) {
+  /* merge admin-managed srcs onto the fixed labels; empty → placeholder */
+  const cards: MediaCard[] = BASE_CARDS.map((c, i) => {
+    const src = items[i]?.src;
+    return {
+      label: c.label,
+      type: src && VIDEO_RE.test(src) ? "video" : "image",
+      src: src || undefined,
+    };
+  });
+
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [isManual, setIsManual]   = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -119,7 +131,7 @@ export function MediaShowcase() {
     timerRef.current = setTimeout(() => {
       /* return card to grid */
       setActiveIdx(null);
-      const next = (idx + 1) % CARDS.length;
+      const next = (idx + 1) % BASE_CARDS.length;
       nextRef.current = next;
 
       /* brief pause, then show next card */
@@ -147,7 +159,7 @@ export function MediaShowcase() {
     clearTimer();
     setActiveIdx(idx);
     setIsManual(true);
-    nextRef.current = (idx + 1) % CARDS.length;
+    nextRef.current = (idx + 1) % BASE_CARDS.length;
   };
 
   const dismiss = () => {
@@ -166,7 +178,7 @@ export function MediaShowcase() {
     >
       {/* 2 × 2 grid */}
       <div className="grid grid-cols-2 gap-3">
-        {CARDS.map((card, i) => {
+        {cards.map((card, i) => {
           const isActive = activeIdx === i;
 
           return (
@@ -246,7 +258,7 @@ export function MediaShowcase() {
               className="fixed inset-0 z-50 pointer-events-none flex flex-col items-center justify-center gap-4"
               role={isManual ? "dialog" : undefined}
               aria-modal={isManual ? "true" : undefined}
-              aria-label={isManual ? CARDS[activeIdx].label : undefined}
+              aria-label={isManual ? cards[activeIdx].label : undefined}
             >
               {/* the floating card — same layoutId as its grid slot */}
               <motion.div
@@ -263,7 +275,7 @@ export function MediaShowcase() {
                 transition={SPRING}
                 onClick={isManual ? dismiss : undefined}
               >
-                <CardFace card={CARDS[activeIdx]} active />
+                <CardFace card={cards[activeIdx]} active />
               </motion.div>
 
               {/* label chip fades in slightly after the card settles */}
@@ -285,7 +297,7 @@ export function MediaShowcase() {
                   userSelect: "none",
                 }}
               >
-                {CARDS[activeIdx].label}
+                {cards[activeIdx].label}
               </motion.div>
 
               {/* dismiss hint — only shown for manually selected cards */}

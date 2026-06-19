@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, Edit } from "lucide-react";
+import MediaUpload from "../components/MediaUpload";
+import { deleteFile } from "@/lib/storage";
 
 type Slider = {
   id: string;
@@ -60,6 +62,10 @@ export default function SlidersAdmin() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!formData.image_url) {
+      alert("Please upload a slider image.");
+      return;
+    }
     const { error } = editingId
       ? await supabase.from("sliders").update(formData).eq("id", editingId)
       : await supabase.from("sliders").insert([formData]);
@@ -75,8 +81,12 @@ export default function SlidersAdmin() {
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure?")) return;
+    const slider = sliders.find((s) => s.id === id);
     const { error } = await supabase.from("sliders").delete().eq("id", id);
-    if (!error) fetchSliders();
+    if (!error) {
+      await deleteFile(slider?.image_url);
+      fetchSliders();
+    }
   }
 
   return (
@@ -101,8 +111,12 @@ export default function SlidersAdmin() {
                 <input required type="text" className="w-full border rounded-lg p-2" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                <input required type="text" className="w-full border rounded-lg p-2" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
+                <MediaUpload
+                  label="Slider Image"
+                  folder="sliders"
+                  value={formData.image_url}
+                  onChange={(url) => setFormData({ ...formData, image_url: url })}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Link URL (Optional)</label>
@@ -110,7 +124,7 @@ export default function SlidersAdmin() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Order Index</label>
-                <input type="number" className="w-full border rounded-lg p-2" value={formData.order_index} onChange={e => setFormData({...formData, order_index: parseInt(e.target.value)})} />
+                <input type="number" className="w-full border rounded-lg p-2" value={formData.order_index} onChange={e => setFormData({...formData, order_index: parseInt(e.target.value) || 0})} />
               </div>
             </div>
             <div className="flex items-center">

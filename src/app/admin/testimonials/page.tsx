@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, Edit } from "lucide-react";
+import MediaUpload from "../components/MediaUpload";
+import { deleteFile } from "@/lib/storage";
 
 const emptyForm = { author_name: "", author_role: "", content: "", rating: 5, avatar_url: "" };
 
@@ -66,8 +68,12 @@ export default function TestimonialsAdmin() {
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure?")) return;
+    const testimonial = testimonials.find((t) => t.id === id);
     const { error } = await supabase.from("testimonials").delete().eq("id", id);
-    if (!error) fetchTestimonials();
+    if (!error) {
+      await deleteFile(testimonial?.avatar_url);
+      fetchTestimonials();
+    }
   }
 
   return (
@@ -93,12 +99,16 @@ export default function TestimonialsAdmin() {
                 <input className="w-full border rounded-lg p-2" value={formData.author_role} onChange={e => setFormData({...formData, author_role: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Avatar URL</label>
-                <input className="w-full border rounded-lg p-2" value={formData.avatar_url} onChange={e => setFormData({...formData, avatar_url: e.target.value})} />
+                <MediaUpload
+                  label="Avatar"
+                  folder="testimonials"
+                  value={formData.avatar_url}
+                  onChange={(url) => setFormData({ ...formData, avatar_url: url })}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Rating (1-5)</label>
-                <input required type="number" min="1" max="5" className="w-full border rounded-lg p-2" value={formData.rating} onChange={e => setFormData({...formData, rating: parseInt(e.target.value)})} />
+                <input required type="number" min="1" max="5" className="w-full border rounded-lg p-2" value={formData.rating} onChange={e => setFormData({...formData, rating: parseInt(e.target.value) || 0})} />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Testimonial Content</label>

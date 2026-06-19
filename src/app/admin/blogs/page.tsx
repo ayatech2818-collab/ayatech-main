@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, Edit, PlaySquare, GraduationCap, Trophy } from "lucide-react";
+import MediaUpload from "../components/MediaUpload";
+import { deleteFile } from "@/lib/storage";
 
 type BlogCategory = "YouTube Videos" | "Student Work" | "Success Stories";
 
@@ -58,6 +60,10 @@ export default function BlogsAdmin() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!formData.image_url) {
+      alert("Please upload a cover image.");
+      return;
+    }
     const { error } = editingId
       ? await supabase.from("blogs").update(formData).eq("id", editingId)
       : await supabase.from("blogs").insert([formData]);
@@ -73,8 +79,12 @@ export default function BlogsAdmin() {
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure?")) return;
+    const blog = blogs.find((b) => b.id === id);
     const { error } = await supabase.from("blogs").delete().eq("id", id);
-    if (!error) fetchBlogs();
+    if (!error) {
+      await deleteFile(blog?.image_url);
+      fetchBlogs();
+    }
   }
 
   const filteredBlogs = blogs.filter(b => b.category === activeTab || (!b.category && activeTab === "Success Stories"));
@@ -114,8 +124,12 @@ export default function BlogsAdmin() {
                 <input required className="w-full border rounded-lg p-2" value={formData.author_name} onChange={e => setFormData({...formData, author_name: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Cover Image / Thumbnail URL</label>
-                <input required className="w-full border rounded-lg p-2" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
+                <MediaUpload
+                  label="Cover Image / Thumbnail"
+                  folder="blogs"
+                  value={formData.image_url}
+                  onChange={(url) => setFormData({ ...formData, image_url: url })}
+                />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Excerpt</label>

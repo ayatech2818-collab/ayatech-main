@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, Edit } from "lucide-react";
+import MediaUpload from "../components/MediaUpload";
+import { deleteFile } from "@/lib/storage";
 
 const emptyForm = {
   slug: "", category: "Student Program", audience: "students", title: "",
@@ -59,6 +61,10 @@ export default function CoursesAdmin() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!formData.image_url) {
+      alert("Please upload a course image.");
+      return;
+    }
     const { error } = editingId
       ? await supabase.from("courses").update(formData).eq("id", editingId)
       : await supabase.from("courses").insert([formData]);
@@ -74,8 +80,21 @@ export default function CoursesAdmin() {
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure?")) return;
+    const course = courses.find((c) => c.id === id);
+    // Collect child content files before the DB cascade removes their rows.
+    const { data: childContents } = await supabase
+      .from("course_contents")
+      .select("media_url")
+      .eq("course_id", id);
+
     const { error } = await supabase.from("courses").delete().eq("id", id);
-    if (!error) fetchCourses();
+    if (!error) {
+      await deleteFile(course?.image_url);
+      await Promise.all(
+        (childContents ?? []).map((c) => deleteFile(c.media_url as string))
+      );
+      fetchCourses();
+    }
   }
 
   return (
@@ -112,8 +131,12 @@ export default function CoursesAdmin() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Image URL</label>
-                <input required className="w-full border rounded-lg p-2" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
+                <MediaUpload
+                  label="Course Image"
+                  folder="courses"
+                  value={formData.image_url}
+                  onChange={(url) => setFormData({ ...formData, image_url: url })}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Format</label>

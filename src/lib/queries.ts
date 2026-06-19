@@ -189,3 +189,20 @@ export async function getActiveSliders(): Promise<UISlider[]> {
     orderIndex: typeof row.order_index === "number" ? row.order_index : 0,
   }));
 }
+
+/* ─────────────────────────── Site settings ──────────────────────────── */
+
+/**
+ * Key/value store for admin-managed homepage images (program-finder cards,
+ * closing CTA, pillars showcase). Returns a `{ key: url }` map; missing keys
+ * simply fall back to the hardcoded placeholders in the UI.
+ */
+export async function getSiteSettings(): Promise<Record<string, string>> {
+  const { data, error } = await supabase.from("site_settings").select("key, value");
+  if (error || !data) return {};
+  return data.reduce((acc: Record<string, string>, row: Record<string, unknown>) => {
+    const key = String(row.key ?? "");
+    if (key) acc[key] = String(row.value ?? "");
+    return acc;
+  }, {});
+}
